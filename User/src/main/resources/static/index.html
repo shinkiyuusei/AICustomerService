@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录与注册 - Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #218838;
+        }
+        .message {
+            margin-top: 10px;
+            text-align: center;
+            color: red;
+        }
+        .switch {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .switch a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .switch a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 id="form-title">用户登录</h2>
+    <div class="form-group">
+        <label for="uname">用户名：</label>
+        <input type="text" id="uname" placeholder="请输入用户名">
+    </div>
+    <div class="form-group">
+        <label for="password">密码：</label>
+        <input type="password" id="password" placeholder="请输入密码">
+    </div>
+    <button class="btn" id="submit-btn">登录</button>
+    <div class="message" id="message"></div>
+    <div class="switch">
+        <a href="#" id="switch-link">没有账号？去注册</a>
+    </div>
+</div>
+
+<script>
+    // 初始化变量
+    let currentFormType = 'login'; // 当前表单类型
+
+    // 切换表单
+    document.getElementById('switch-link').addEventListener('click', function(event) {
+        event.preventDefault();
+        currentFormType = currentFormType === 'login' ? 'register' : 'login';
+        updateForm(currentFormType);
+    });
+
+    // 更新表单内容
+    function updateForm(type) {
+        document.getElementById('form-title').innerText = type === 'login' ? '用户登录' : '用户注册';
+        document.getElementById('submit-btn').innerText = type === 'login' ? '登录' : '注册';
+        document.getElementById('switch-link').innerText = type === 'login' ? '没有账号？去注册' : '已有账号？去登录';
+    }
+
+    // 提交表单
+    document.getElementById('submit-btn').addEventListener('click', function() {
+        const uname = document.getElementById('uname').value;
+        const password = document.getElementById('password').value;
+
+        if (!uname || !password) {
+            showMessage('请填写完整的用户名和密码！');
+            return;
+        }
+
+        // 添加 /user 前缀到接口路径
+        const endpoint = currentFormType === 'login'
+            ? '/user/login'
+            : '/user/register';
+
+        const payload = currentFormType === 'login'
+            ? `uname=${encodeURIComponent(uname)}&password=${encodeURIComponent(password)}`
+            : JSON.stringify({ uname, password });
+
+        fetch(`http://localhost:8082${endpoint}`, { // 确保正确设置后端地址
+            method: 'POST',
+            headers: {
+                'Content-Type': currentFormType === 'login'
+                    ? 'application/x-www-form-urlencoded'
+                    : 'application/json'
+            },
+            body: payload
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === '0') {
+                    alert(`${currentFormType === 'login' ? '登录成功！' : '注册成功！'}`);
+                    showMessage('');
+
+                    if (currentFormType === 'login') {
+                        localStorage.setItem('token', data.data.token);
+                        window.location.href = 'http://localhost:8081/chat';
+                    }
+                } else {
+                    showMessage(data.msg);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('系统错误，请稍后再试！');
+            });
+    });
+
+    // 显示消息
+    function showMessage(message) {
+        document.getElementById('message').innerText = message;
+    }
+</script>
+</body>
+</html>

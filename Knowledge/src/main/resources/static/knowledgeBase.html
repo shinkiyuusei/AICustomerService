@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Base Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        .form-container {
+            margin-top: 20px;
+        }
+        .form-container input, .form-container textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-container button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background-color: #218838;
+        }
+        .actions button {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>知识库管理系统</h1>
+    <div class="form-container">
+        <h2>Add/Edit Knowledge</h2>
+        <input type="hidden" id="knowledge-id">
+        <input type="text" id="question" placeholder="Question">
+        <textarea id="answer" placeholder="Answer"></textarea>
+        <button onclick="saveKnowledge()">Save</button>
+    </div>
+    <h2>Knowledge List</h2>
+    <table id="knowledge-table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Question</th>
+            <th>Answer</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Rows will be populated by JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // 定义后端API的基础URL
+    const API_BASE_URL = "http://localhost:8083/api/knowledgeBase";
+
+    // Load knowledge base on page load
+    window.onload = async function () {
+        await loadKnowledgeBase();
+    };
+
+    // Load knowledge base data
+    async function loadKnowledgeBase() {
+        const response = await fetch(`${API_BASE_URL}/all`);
+        if (!response.ok) {
+            alert("Failed to load knowledge base data.");
+            return;
+        }
+        const data = await response.json();
+        const tableBody = document.querySelector('#knowledge-table tbody');
+        tableBody.innerHTML = '';
+
+        data.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                    <td>${item.id}</td>
+                    <td>${escapeHTML(item.question)}</td>
+                    <td>${escapeHTML(item.answer)}</td>
+                    <td class="actions">
+                        <button onclick="editKnowledge(${item.id}, '${escapeHTML(item.question)}', '${escapeHTML(item.answer)}')">Edit</button>
+                        <button onclick="deleteKnowledge(${item.id})">Delete</button>
+                    </td>
+                `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Save or update knowledge
+    async function saveKnowledge() {
+        const id = document.getElementById('knowledge-id').value;
+        const question = document.getElementById('question').value.trim();
+        const answer = document.getElementById('answer').value.trim();
+
+        if (!question || !answer) {
+            alert("Please fill in both question and answer.");
+            return;
+        }
+
+        const url = id ? `${API_BASE_URL}/update/${id}` : `${API_BASE_URL}/add`;
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ question, answer })
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save knowledge.");
+            }
+
+            const result = await response.json();
+            alert(result.message);
+            await loadKnowledgeBase();
+            clearForm();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    // Edit knowledge
+    function editKnowledge(id, question, answer) {
+        document.getElementById('knowledge-id').value = id;
+        document.getElementById('question').value = unescapeHTML(question);
+        document.getElementById('answer').value = unescapeHTML(answer);
+    }
+
+    // Delete knowledge
+    async function deleteKnowledge(id) {
+        if (!confirm('Are you sure you want to delete this knowledge?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/delete/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to delete knowledge.");
+            }
+
+            const result = await response.json();
+            alert(result.message);
+            await loadKnowledgeBase();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    // Clear form
+    function clearForm() {
+        document.getElementById('knowledge-id').value = '';
+        document.getElementById('question').value = '';
+        document.getElementById('answer').value = '';
+    }
+
+    // Escape HTML to prevent XSS attacks
+    function escapeHTML(str) {
+        return str.replace(/[&<>"'/]/g, function(match) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[match] || match;
+        });
+    }
+
+    // Unescape HTML
+    function unescapeHTML(str) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = str;
+        return tempDiv.textContent || tempDiv.innerText || '';
+    }
+</script>
+</body>
+</html>
