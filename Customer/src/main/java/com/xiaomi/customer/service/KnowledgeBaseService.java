@@ -5,16 +5,10 @@ import com.alibaba.fastjson2.JSONObject;
 import com.xiaomi.customer.domain.KnowledgeBase;
 
 public interface KnowledgeBaseService {
-
-
     JSONArray getKnowledgeBase();
-
     JSONObject addKnowledge(KnowledgeBase knowledgeBase);
-
     JSONObject updateKnowledge(Long id, KnowledgeBase knowledgeBase);
-
-
     JSONObject deleteKnowledge(Long id);
-
     JSONObject searchKnowledgeBase(String query);
+    JSONObject searchSimilarKnowledgeBase(String query, double threshold);
 }

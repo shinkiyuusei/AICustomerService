@@ -22,8 +22,8 @@ public class DeepseekChatServiceImpl implements DeepseekChatService {
     public JSONObject sendMessage(JSONArray messages) throws Exception {
         // 创建请求的 JSON 数据
         JSONObject payload = new JSONObject();
-        payload.put("model", "deepseek-chat");// 模型名称
-        payload.put("messages", messages);// 消息列表
+        payload.put("model", "deepseek-chat");
+        payload.put("messages", messages);
 
         // 初始化 HttpClient 和 HttpPost
         CloseableHttpClient client = HttpClients.createDefault();

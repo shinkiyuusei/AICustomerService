@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.xiaomi.customer.domain.KnowledgeBase;
 import com.xiaomi.customer.repository.KnowledgeBaseRepository;
 import com.xiaomi.customer.service.KnowledgeBaseService;
+import org.apache.commons.lang.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -84,6 +85,27 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             result.put("answer", knowledge.getAnswer());
         }
 
+        return result;
+    }
+
+    @Override
+    public JSONObject searchSimilarKnowledgeBase(String query, double threshold) {//搜索相似的知识库问题
+        JSONObject result = new JSONObject();
+        List<KnowledgeBase> knowledgeList = knowledgeBaseRepository.findAll();
+        KnowledgeBase mostSimilar = knowledgeList.stream()
+                .max((kb1, kb2) -> {
+                    double sim1 = StringUtils.getLevenshteinDistance(query, kb1.getQuestion());
+                    double sim2 = StringUtils.getLevenshteinDistance(query, kb2.getQuestion());
+                    return Double.compare(sim2, sim1);
+                })
+                .orElse(null);
+        if (mostSimilar != null) {
+            double similarity = 1 - (double) StringUtils.getLevenshteinDistance(query, mostSimilar.getQuestion()) / Math.max(query.length(), mostSimilar.getQuestion().length());
+            if (similarity >= threshold) {
+                result.put("question", mostSimilar.getQuestion());
+                result.put("answer", mostSimilar.getAnswer());
+            }
+        }
         return result;
     }
 }

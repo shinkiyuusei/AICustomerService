@@ -2,7 +2,6 @@ package com.xiaomi.customer.controller;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-
 import com.xiaomi.customer.service.ChatHistoryService;
 import com.xiaomi.customer.service.DeepseekChatService;
 import com.xiaomi.customer.service.KnowledgeBaseService;
@@ -30,15 +29,15 @@ public class ChatController {
             JSONArray messages = request.getJSONArray("messages");
             String userMessage = messages.getJSONObject(0).getString("content");
 
-            // 检查知识库是否有匹配答案
-            JSONObject knowledgeResponse = knowledgeBaseService.searchKnowledgeBase(userMessage);
+            // 检查知识库是否有相似答案
+            JSONObject knowledgeResponse = knowledgeBaseService.searchSimilarKnowledgeBase(userMessage, 0.8);
             if (knowledgeResponse != null && knowledgeResponse.containsKey("answer")) {
                 return createSuccessResponse(knowledgeResponse.getString("answer"));
             }
 
-            // 检查历史记录是否有匹配答案
+            // 检查历史记录是否有相似答案
             try {
-                Map<String, Object> chatHistory = chatHistoryService.findByUserMessage(userMessage);
+                Map<String, Object> chatHistory = chatHistoryService.findSimilarChatHistory(userMessage, 0.8);
                 if (chatHistory != null && !chatHistory.isEmpty()) {
                     return createSuccessResponse((String) chatHistory.get("assistant_response"));
                 }
@@ -59,7 +58,7 @@ public class ChatController {
                                 String assistantResponseContent = assistantResponse.getString("content");
 
                                 // 检查并截断 assistantResponseContent 的长度
-                                int maxLength = 1000; // 根据数据库列的长度定义设置
+                                int maxLength = 1000;
                                 if (assistantResponseContent.length() > maxLength) {
                                     assistantResponseContent = assistantResponseContent.substring(0, maxLength);
                                 }

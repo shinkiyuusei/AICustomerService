@@ -7,4 +7,5 @@ public interface ChatHistoryService {
     List<Map<String, Object>> getChatHistory();
     void saveChatHistory(String userMessage, String assistantResponse);
     Map<String, Object> findByUserMessage(String userMessage);
+    Map<String, Object> findSimilarChatHistory(String userMessage, double threshold);
 }
