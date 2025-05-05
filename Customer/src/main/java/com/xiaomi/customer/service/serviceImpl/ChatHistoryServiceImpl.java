@@ -1,8 +1,10 @@
 package com.xiaomi.customer.service.serviceImpl;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaomi.customer.service.ChatHistoryService;
 import org.apache.commons.lang.*;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -13,9 +15,12 @@ import java.util.*;
 public class ChatHistoryServiceImpl implements ChatHistoryService {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final String QUEUE_NAME = "chat_history_queue";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Override
     public List<Map<String, Object>> getChatHistory() {
@@ -52,7 +57,8 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     }
 
     @Override
-    public Map<String, Object> findSimilarChatHistory(String userMessage, double threshold) {// 查询与给定用户消息相似的历史记录
+    public Map<String, Object> findSimilarChatHistory(String userMessage, double threshold) {
+        // 查询与给定用户消息相似的历史记录
         List<Map<String, Object>> chatHistoryList = getChatHistory();
         Map<String, Object> mostSimilar = chatHistoryList.stream()
                 .max((ch1, ch2) -> {
@@ -71,5 +77,13 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
             }
         }
         return null;
+    }
+
+    @Override
+    public void sendChatHistoryToQueue(String userMessage, String assistantResponse) {
+        JSONObject message = new JSONObject();
+        message.put("userMessage", userMessage);
+        message.put("assistantResponse", assistantResponse);
+        rabbitTemplate.convertAndSend(QUEUE_NAME, message.toJSONString());
     }
 }

@@ -8,4 +8,5 @@ public interface ChatHistoryService {
     void saveChatHistory(String userMessage, String assistantResponse);
     Map<String, Object> findByUserMessage(String userMessage);
     Map<String, Object> findSimilarChatHistory(String userMessage, double threshold);
+    void sendChatHistoryToQueue(String userMessage, String assistantResponse);
 }

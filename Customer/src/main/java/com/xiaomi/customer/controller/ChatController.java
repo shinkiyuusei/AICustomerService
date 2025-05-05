@@ -38,7 +38,7 @@ public class ChatController {
             // 检查历史记录是否有相似答案
             try {
                 Map<String, Object> chatHistory = chatHistoryService.findSimilarChatHistory(userMessage, 0.8);
-                if (chatHistory != null && !chatHistory.isEmpty()) {
+                if (chatHistory != null &&!chatHistory.isEmpty()) {
                     return createSuccessResponse((String) chatHistory.get("assistant_response"));
                 }
             } catch (Exception e) {
@@ -50,7 +50,7 @@ public class ChatController {
                 JSONObject responseJson = deepseekChatService.sendMessage(messages);
                 if (responseJson != null && responseJson.containsKey("choices")) {
                     JSONArray choices = responseJson.getJSONArray("choices");
-                    if (choices != null && !choices.isEmpty()) {
+                    if (choices != null &&!choices.isEmpty()) {
                         JSONObject firstChoice = choices.getJSONObject(0);
                         if (firstChoice != null && firstChoice.containsKey("message")) {
                             JSONObject assistantResponse = firstChoice.getJSONObject("message");
@@ -65,6 +65,9 @@ public class ChatController {
 
                                 // 保存到数据库
                                 chatHistoryService.saveChatHistory(userMessage, assistantResponseContent);
+
+                                // 发送聊天历史到 RabbitMQ 队列
+                                chatHistoryService.sendChatHistoryToQueue(userMessage, assistantResponseContent);
 
                                 // 返回结果
                                 return createSuccessResponse(assistantResponseContent);
